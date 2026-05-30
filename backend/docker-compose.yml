@@ -1,0 +1,29 @@
+services:
+
+  user-service:
+    build: ./user-service
+    container_name: user-service
+    ports:
+      - "3001:3001"
+    restart: always
+
+  book-service:
+    build: ./book-service
+    container_name: book-service
+    ports:
+      - "3002:3002"
+    restart: always
+
+  loan-service:
+    build: ./loan-service
+    container_name: loan-service
+    ports:
+      - "3003:3003"
+    restart: always
+
+  frontend:
+    build: ./frontend
+    container_name: frontend
+    ports:
+      - "5173:5173"
+    restart: always

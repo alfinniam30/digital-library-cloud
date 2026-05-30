@@ -1,0 +1,83 @@
+.app-navbar {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 28px;
+  background: #1f2937;
+  color: white;
+  box-shadow: 0 4px 20px rgba(15, 23, 42, 0.2);
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+
+.navbar-brand a {
+  color: white;
+  font-weight: 800;
+  font-size: 1.1rem;
+  text-decoration: none;
+}
+
+.navbar-links {
+  display: flex;
+  gap: 22px;
+}
+
+.navbar-links a {
+  color: #d1d5db;
+  text-decoration: none;
+  font-weight: 600;
+  transition: color 0.2s ease;
+}
+
+.navbar-links a:hover {
+  color: white;
+}
+
+.navbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.navbar-user {
+  font-size: 0.95rem;
+  color: #e5e7eb;
+}
+
+.btn-logout {
+  background: #f97316;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 999px;
+  color: white;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.2s ease, background-color 0.2s ease;
+}
+
+.btn-logout:hover {
+  background: #ea580c;
+  transform: translateY(-1px);
+}
+
+@media (max-width: 720px) {
+  .app-navbar {
+    flex-wrap: wrap;
+    gap: 12px;
+    justify-content: center;
+  }
+
+  .navbar-links {
+    gap: 14px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .navbar-actions {
+    gap: 10px;
+    width: 100%;
+    justify-content: center;
+  }
+}
