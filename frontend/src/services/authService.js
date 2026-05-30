@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_URL = "http://localhost:3001/api/users";
+const API_URL = "https://user-service-639080931374.asia-southeast2.run.app/api/users";
 
 const apiClient = axios.create({
   baseURL: API_URL,

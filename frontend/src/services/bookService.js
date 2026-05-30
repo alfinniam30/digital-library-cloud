@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_URL = "http://localhost:3002/api/books";
+const API_URL = "https://book-service-639080931374.asia-southeast2.run.app/api/books";
 
 // Get auth token from localStorage
 const getAuthToken = () => {
