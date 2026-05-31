@@ -124,10 +124,55 @@
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
-.admin-form input:focus {
+.admin-form textarea {
+  width: 100%;
+  padding: 12px 14px;
+  border: 2px solid #ddd;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  background-color: #fff;
+  resize: vertical;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.admin-form input:focus,
+.admin-form textarea:focus {
   outline: none;
   border-color: #667eea;
   box-shadow: 0 6px 16px rgba(102, 126, 234, 0.12);
+}
+
+.edit-panel {
+  background-color: #ffffff;
+  border-radius: 8px;
+  padding: 24px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  margin-bottom: 24px;
+}
+
+.cover-thumbnail {
+  width: 70px;
+  height: 90px;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+}
+
+.file-label {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  border: 2px dashed #cbd5e1;
+  border-radius: 8px;
+  background-color: #f8fafc;
+  font-size: 0.95rem;
+  color: #334155;
+  cursor: pointer;
+}
+
+.file-label input {
+  display: none;
 }
 
 .admin-error,

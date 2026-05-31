@@ -299,7 +299,14 @@
 .user-col {
   color: #666;
   font-weight: 600;
-  width: 80px;
+  width: 120px;
+}
+
+.user-id-label {
+  display: block;
+  font-size: 0.85rem;
+  color: #777;
+  margin-top: 4px;
 }
 
 .book-col {

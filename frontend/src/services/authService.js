@@ -63,3 +63,13 @@ export const getUserFromToken = () => {
     return null;
   }
 };
+
+export const getUsers = async () => {
+  try {
+    const response = await apiClient.get("/");
+    return response.data || [];
+  } catch (error) {
+    console.error("Error fetching users:", error);
+    throw error;
+  }
+};

@@ -1,16 +1,28 @@
 const db = require('../config/db');
 
-exports.getBooks = (req, res) => {
-  db.query(
-    'SELECT * FROM books',
-    (err, results) => {
-      if (err) {
-        return res.status(500).json(err);
-      }
+const normalizeBookRow = (row) => {
+  if (!row) return row;
 
-      res.json(results);
+  return {
+    ...row,
+    cover_image:
+      row.cover_image == null
+        ? null
+        : Buffer.isBuffer(row.cover_image)
+        ? row.cover_image.toString()
+        : row.cover_image,
+  };
+};
+
+exports.getBooks = (req, res) => {
+  db.query('SELECT * FROM books', (err, results) => {
+    if (err) {
+      return res.status(500).json(err);
     }
-  );
+
+    const books = results.map(normalizeBookRow);
+    res.json(books);
+  });
 };
 
 exports.createBook = (req, res) => {
@@ -19,18 +31,32 @@ exports.createBook = (req, res) => {
     author,
     year,
     category_id,
-    stock
+    stock,
+    publisher,
+    isbn,
+    description,
+    cover_image,
   } = req.body;
 
   const sql = `
     INSERT INTO books
-    (title, author, year, category_id, stock)
-    VALUES (?, ?, ?, ?, ?)
+    (title, author, year, category_id, stock, publisher, isbn, description, cover_image)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
   `;
 
   db.query(
     sql,
-    [title, author, year, category_id, stock],
+    [
+      title,
+      author,
+      year,
+      category_id,
+      stock,
+      publisher || null,
+      isbn || null,
+      description || null,
+      cover_image || null,
+    ],
     (err, result) => {
       if (err) {
         return res.status(500).json(err);
@@ -38,7 +64,7 @@ exports.createBook = (req, res) => {
 
       res.status(201).json({
         message: 'Book created',
-        id: result.insertId
+        id: result.insertId,
       });
     }
   );
@@ -47,23 +73,19 @@ exports.createBook = (req, res) => {
 exports.getBookById = (req, res) => {
   const { id } = req.params;
 
-  db.query(
-    'SELECT * FROM books WHERE id = ?',
-    [id],
-    (err, results) => {
-      if (err) {
-        return res.status(500).json(err);
-      }
-
-      if (results.length === 0) {
-        return res.status(404).json({
-          message: 'Book not found'
-        });
-      }
-
-      res.json(results[0]);
+  db.query('SELECT * FROM books WHERE id = ?', [id], (err, results) => {
+    if (err) {
+      return res.status(500).json(err);
     }
-  );
+
+    if (results.length === 0) {
+      return res.status(404).json({
+        message: 'Book not found',
+      });
+    }
+
+    res.json(normalizeBookRow(results[0]));
+  });
 };
 
 exports.updateBook = (req, res) => {
@@ -74,12 +96,16 @@ exports.updateBook = (req, res) => {
     author,
     year,
     category_id,
-    stock
+    stock,
+    publisher,
+    isbn,
+    description,
+    cover_image,
   } = req.body;
 
   db.query(
     `UPDATE books
-     SET title=?, author=?, year=?, category_id=?, stock=?
+     SET title=?, author=?, year=?, category_id=?, stock=?, publisher=?, isbn=?, description=?, cover_image=?
      WHERE id=?`,
     [
       title,
@@ -87,7 +113,11 @@ exports.updateBook = (req, res) => {
       year,
       category_id,
       stock,
-      id
+      publisher || null,
+      isbn || null,
+      description || null,
+      cover_image || null,
+      id,
     ],
     (err) => {
       if (err) {
@@ -95,7 +125,7 @@ exports.updateBook = (req, res) => {
       }
 
       res.json({
-        message: 'Book updated successfully'
+        message: 'Book updated successfully',
       });
     }
   );

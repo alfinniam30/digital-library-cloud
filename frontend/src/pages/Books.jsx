@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { getBooks, createBook, deleteBook } from "../services/bookService";
+import { getBooks, createBook, updateBook, deleteBook } from "../services/bookService";
 import { getUserFromToken } from "../services/authService";
 import "../styles/Books.css";
 
@@ -15,9 +15,27 @@ function Books() {
     year: "",
     category_id: "",
     stock: 1,
+    publisher: "",
+    isbn: "",
+    description: "",
+    cover_image: "",
   });
   const [adminError, setAdminError] = useState(null);
   const [adminSuccess, setAdminSuccess] = useState(null);
+  const [editBook, setEditBook] = useState(null);
+  const [editForm, setEditForm] = useState({
+    title: "",
+    author: "",
+    year: "",
+    category_id: "",
+    stock: 1,
+    publisher: "",
+    isbn: "",
+    description: "",
+    cover_image: "",
+  });
+  const [editError, setEditError] = useState(null);
+  const [editSuccess, setEditSuccess] = useState(null);
 
   const user = getUserFromToken();
   const isAdmin = user?.role?.toLowerCase() === "admin";
@@ -32,11 +50,16 @@ function Books() {
     if (searchTerm.trim() === "") {
       setFilteredBooks(books);
     } else {
-      const filtered = books.filter(
-        (book) =>
-          book.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          book.author.toLowerCase().includes(searchTerm.toLowerCase())
-      );
+      const filtered = books.filter((book) => {
+        const term = searchTerm.toLowerCase();
+        return (
+          (book.title || "").toLowerCase().includes(term) ||
+          (book.author || "").toLowerCase().includes(term) ||
+          (book.publisher || "").toLowerCase().includes(term) ||
+          (book.isbn || "").toLowerCase().includes(term) ||
+          (book.description || "").toLowerCase().includes(term)
+        );
+      });
       setFilteredBooks(filtered);
     }
   }, [searchTerm, books]);
@@ -82,6 +105,75 @@ function Books() {
     }));
   };
 
+  const updateForm = (setter) => (e) => {
+    const { name, value } = e.target;
+    setter((prev) => ({
+      ...prev,
+      [name]:
+        name === "stock" || name === "year" || name === "category_id"
+          ? Number(value)
+          : value,
+    }));
+  };
+
+  const handleFileInput = async (event, setter) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      setter((prev) => ({
+        ...prev,
+        cover_image: reader.result || "",
+      }));
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleEditBook = (book) => {
+    setEditBook(book);
+    setEditForm({
+      title: book.title || "",
+      author: book.author || "",
+      year: book.year || "",
+      category_id: book.category_id || "",
+      stock: book.stock || 1,
+      publisher: book.publisher || "",
+      isbn: book.isbn || "",
+      description: book.description || "",
+      cover_image: book.cover_image || "",
+    });
+    setEditError(null);
+    setEditSuccess(null);
+  };
+
+  const handleCancelEdit = () => {
+    setEditBook(null);
+    setEditForm({
+      title: "",
+      author: "",
+      year: "",
+      category_id: "",
+      stock: 1,
+      publisher: "",
+      isbn: "",
+      description: "",
+      cover_image: "",
+    });
+    setEditError(null);
+    setEditSuccess(null);
+  };
+
+  const getCoverImageSrc = (coverImage) => {
+    if (!coverImage) return null;
+    if (typeof coverImage === "string" && coverImage.startsWith("data:")) {
+      return coverImage;
+    }
+    return typeof coverImage === "string"
+      ? `data:image/jpeg;base64,${coverImage}`
+      : null;
+  };
+
   const handleCreateBook = async (e) => {
     e.preventDefault();
     setAdminError(null);
@@ -94,13 +186,57 @@ function Books() {
     try {
       await createBook(adminForm);
       setAdminSuccess("Buku berhasil ditambahkan.");
-      setAdminForm({ title: "", author: "", year: "", category_id: "", stock: 1 });
+      setAdminForm({
+        title: "",
+        author: "",
+        year: "",
+        category_id: "",
+        stock: 1,
+        publisher: "",
+        isbn: "",
+        description: "",
+        cover_image: "",
+      });
       loadBooks();
     } catch (err) {
       console.error("Gagal menambahkan buku:", err);
       setAdminError(
         err.response?.data?.message ||
           "Gagal menambahkan buku. Silakan coba lagi."
+      );
+    }
+  };
+
+  const handleUpdateBook = async (e) => {
+    e.preventDefault();
+    setEditError(null);
+
+    if (!editForm.title || !editForm.author || !editForm.year || !editForm.stock) {
+      setEditError("Judul, penulis, tahun, dan stok wajib diisi.");
+      return;
+    }
+
+    try {
+      await updateBook(editBook.id, editForm);
+      setEditSuccess("Buku berhasil diperbarui.");
+      setEditBook(null);
+      setEditForm({
+        title: "",
+        author: "",
+        year: "",
+        category_id: "",
+        stock: 1,
+        publisher: "",
+        isbn: "",
+        description: "",
+        cover_image: "",
+      });
+      loadBooks();
+    } catch (err) {
+      console.error("Gagal memperbarui buku:", err);
+      setEditError(
+        err.response?.data?.message ||
+          "Gagal memperbarui buku. Silakan coba lagi."
       );
     }
   };
@@ -158,6 +294,117 @@ function Books() {
         </div>
       )}
 
+      {!loading && isAdmin && editBook && (
+        <div className="edit-panel">
+          <div className="admin-header">
+            <h2>✏️ Edit Buku</h2>
+            <p>Ubah semua field buku yang tersedia, kemudian simpan.</p>
+          </div>
+          <form onSubmit={handleUpdateBook} className="admin-form">
+            <div className="admin-row">
+              <input
+                type="text"
+                name="title"
+                placeholder="Judul buku"
+                value={editForm.title}
+                onChange={updateForm(setEditForm)}
+              />
+              <input
+                type="text"
+                name="author"
+                placeholder="Penulis"
+                value={editForm.author}
+                onChange={updateForm(setEditForm)}
+              />
+            </div>
+
+            <div className="admin-row">
+              <input
+                type="number"
+                name="year"
+                placeholder="Tahun terbit"
+                value={editForm.year}
+                onChange={updateForm(setEditForm)}
+                min="1900"
+              />
+              <input
+                type="text"
+                name="category_id"
+                placeholder="Kategori ID"
+                value={editForm.category_id}
+                onChange={updateForm(setEditForm)}
+              />
+            </div>
+
+            <div className="admin-row">
+              <input
+                type="number"
+                name="stock"
+                placeholder="Stok"
+                value={editForm.stock}
+                onChange={updateForm(setEditForm)}
+                min="1"
+              />
+              <input
+                type="text"
+                name="publisher"
+                placeholder="Penerbit"
+                value={editForm.publisher}
+                onChange={updateForm(setEditForm)}
+              />
+            </div>
+
+            <div className="admin-row admin-row-single">
+              <input
+                type="text"
+                name="isbn"
+                placeholder="ISBN"
+                value={editForm.isbn}
+                onChange={updateForm(setEditForm)}
+              />
+            </div>
+
+            <div className="admin-row admin-row-single">
+              <textarea
+                name="description"
+                placeholder="Deskripsi buku"
+                value={editForm.description}
+                onChange={updateForm(setEditForm)}
+                rows="4"
+              />
+            </div>
+
+            <div className="admin-row admin-row-single">
+              <label className="file-label">
+                Cover Image
+                <input
+                  type="file"
+                  accept="image/*"
+                  name="cover_image"
+                  onChange={(event) => handleFileInput(event, setEditForm)}
+                />
+              </label>
+            </div>
+
+            {editError && <div className="admin-error">{editError}</div>}
+            {editSuccess && <div className="admin-success">{editSuccess}</div>}
+
+            <div className="admin-row admin-row-single">
+              <button type="submit" className="btn-submit-book">
+                Simpan Perubahan
+              </button>
+              <button
+                type="button"
+                className="btn-retry"
+                onClick={handleCancelEdit}
+              >
+                Batal
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
       {!loading && isAdmin && (
         <div className="admin-panel">
           <div className="admin-header">
@@ -200,7 +447,7 @@ function Books() {
               />
             </div>
 
-            <div className="admin-row admin-row-single">
+            <div className="admin-row">
               <input
                 type="number"
                 name="stock"
@@ -209,6 +456,45 @@ function Books() {
                 onChange={handleAdminChange}
                 min="1"
               />
+              <input
+                type="text"
+                name="publisher"
+                placeholder="Penerbit"
+                value={adminForm.publisher}
+                onChange={handleAdminChange}
+              />
+            </div>
+
+            <div className="admin-row admin-row-single">
+              <input
+                type="text"
+                name="isbn"
+                placeholder="ISBN"
+                value={adminForm.isbn}
+                onChange={handleAdminChange}
+              />
+            </div>
+
+            <div className="admin-row admin-row-single">
+              <textarea
+                name="description"
+                placeholder="Deskripsi buku"
+                value={adminForm.description}
+                onChange={handleAdminChange}
+                rows="4"
+              />
+            </div>
+
+            <div className="admin-row admin-row-single">
+              <label className="file-label">
+                Cover Image
+                <input
+                  type="file"
+                  accept="image/*"
+                  name="cover_image"
+                  onChange={(event) => handleFileInput(event, setAdminForm)}
+                />
+              </label>
             </div>
 
             {adminError && <div className="admin-error">{adminError}</div>}
@@ -244,8 +530,11 @@ function Books() {
               <thead>
                 <tr>
                   <th>ID</th>
+                  <th>Cover</th>
                   <th>Judul Buku</th>
                   <th>Penulis</th>
+                  <th>Penerbit</th>
+                  <th>ISBN</th>
                   <th>Stok</th>
                   <th className="status-col">Status</th>
                   {isAdmin && <th className="action-col">Aksi</th>}
@@ -255,8 +544,26 @@ function Books() {
                 {filteredBooks.map((book) => (
                   <tr key={book.id} className="table-row">
                     <td className="id-col">{book.id}</td>
-                    <td className="title-col">{book.title}</td>
-                    <td className="author-col">{book.author}</td>
+                    <td className="cover-col">
+                      {getCoverImageSrc(book.cover_image) ? (
+                        <img
+                          src={getCoverImageSrc(book.cover_image)}
+                          alt={book.title}
+                          className="cover-thumbnail"
+                        />
+                      ) : (
+                        <span>-</span>
+                      )}
+                    </td>
+                    <td className="title-col">
+                      <strong>{book.title}</strong>
+                      {book.description && (
+                        <p className="book-description">{book.description}</p>
+                      )}
+                    </td>
+                    <td className="author-col">{book.author || '-'}</td>
+                    <td className="publisher-col">{book.publisher || '-'}</td>
+                    <td className="isbn-col">{book.isbn || '-'}</td>
                     <td className="stock-col">
                       <span className="stock-badge">{book.stock}</span>
                     </td>
@@ -269,6 +576,13 @@ function Books() {
                     </td>
                     {isAdmin && (
                       <td className="action-col">
+                        <button
+                          type="button"
+                          className="btn-edit"
+                          onClick={() => handleEditBook(book)}
+                        >
+                          Edit
+                        </button>
                         <button
                           type="button"
                           className="btn-delete"

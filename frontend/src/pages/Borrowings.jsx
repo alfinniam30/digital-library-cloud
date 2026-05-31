@@ -5,13 +5,14 @@ import {
   returnBorrowing,
 } from "../services/loanService";
 import { getBooks } from "../services/bookService";
-import { getUserFromToken } from "../services/authService";
+import { getUserFromToken, getUsers } from "../services/authService";
 import "../styles/Borrowings.css";
 
 function Borrowings() {
   const currentUser = getUserFromToken();
   const [borrowings, setBorrowings] = useState([]);
   const [books, setBooks] = useState([]);
+  const [userMap, setUserMap] = useState({});
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
@@ -45,6 +46,19 @@ function Borrowings() {
     let borrowingError = null;
 
     try {
+      const usersData = await getUsers();
+      const usersLookup = Array.isArray(usersData)
+        ? usersData.reduce((acc, user) => {
+            acc[user.id] = user.name;
+            return acc;
+          }, {})
+        : {};
+      setUserMap(usersLookup);
+    } catch (err) {
+      console.error("Gagal memuat data pengguna:", err);
+    }
+
+    try {
       const booksData = await getBooks();
       setBooks(Array.isArray(booksData) ? booksData : []);
     } catch (err) {
@@ -57,7 +71,10 @@ function Borrowings() {
 
     try {
       const borrowingsData = await getBorrowings();
-      setBorrowings(Array.isArray(borrowingsData) ? borrowingsData : []);
+      const sortedBorrowings = Array.isArray(borrowingsData)
+        ? [...borrowingsData].sort((a, b) => b.id - a.id)
+        : [];
+      setBorrowings(sortedBorrowings);
     } catch (err) {
       console.error("Gagal memload data peminjaman:", err);
       borrowingError =
@@ -166,6 +183,18 @@ function Borrowings() {
     return book ? book.title : `Book ID: ${bookId}`;
   };
 
+  const getUserName = (userId) => {
+    if (userMap[userId]) {
+      return userMap[userId];
+    }
+
+    if (currentUser?.id === userId) {
+      return currentUser.email;
+    }
+
+    return null;
+  };
+
   const calculateDaysOverdue = (borrowDate, returnDate) => {
     if (!borrowDate) return 0;
     
@@ -219,7 +248,7 @@ function Borrowings() {
               />
               {currentUser && (
                 <p className="note-text">
-                  Meminjam sebagai <strong>{currentUser.email}</strong>.
+                  Meminjam sebagai <strong>{userMap[currentUser.id] || currentUser.email}</strong>.
                 </p>
               )}
             </div>
@@ -300,7 +329,7 @@ function Borrowings() {
                 <thead>
                   <tr>
                     <th>ID</th>
-                    <th>User ID</th>
+                    <th>User</th>
                     <th>Judul Buku</th>
                     <th>Tgl Pinjam</th>
                     <th>Tgl Kembali</th>
@@ -319,7 +348,17 @@ function Borrowings() {
                     return (
                       <tr key={borrowing.id} className={isReturned ? "row-returned" : ""}>
                         <td className="id-col">{borrowing.id}</td>
-                        <td className="user-col">{borrowing.user_id}</td>
+                        <td className="user-col">
+                          {getUserName(borrowing.user_id) ? (
+                            <>
+                              <strong>{getUserName(borrowing.user_id)}</strong>
+                              <br />
+                              <span className="user-id-label">ID: {borrowing.user_id}</span>
+                            </>
+                          ) : (
+                            borrowing.user_id
+                          )}
+                        </td>
                         <td className="book-col">
                           {getBookTitle(borrowing.book_id)}
                         </td>
